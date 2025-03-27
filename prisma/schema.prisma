@@ -1,0 +1,70 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  email     String    @unique
+  password  String
+  createdAt DateTime
+  updatedAt DateTime? @db.Date
+}
+
+model CarSet {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  url           String         @unique
+  cars          Car[]
+  CarSetAnswers CarSetAnswer[]
+}
+
+model Car {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  brand     String
+  model     String
+  imgUrl    String
+  CarSet    CarSet?     @relation(fields: [carSetId], references: [id], onDelete: Cascade)
+  carSetId  String?     @db.ObjectId
+  questions Question[]
+  CarAnswer CarAnswer[]
+}
+
+model Question {
+  id    String  @id @default(auto()) @map("_id") @db.ObjectId
+  text  String
+  Car   Car?    @relation(fields: [carId], references: [id])
+  carId String? @db.ObjectId
+}
+
+model CarSetAnswer {
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  carSet     CarSet      @relation(fields: [carSetId], references: [id])
+  carSetId   String      @db.ObjectId
+  carAnswers CarAnswer[]
+}
+
+model CarAnswer {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  questions      QuestionAnswer[]
+  carId          String           @db.ObjectId
+  car            Car              @relation(fields: [carId], references: [id])
+  carSetAnswerId String?          @db.ObjectId
+  CarSetAnswer   CarSetAnswer?    @relation(fields: [carSetAnswerId], references: [id])
+}
+
+model QuestionAnswer {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  CarAnswer   CarAnswer? @relation(fields: [carAnswerId], references: [id])
+  rating      Int // 1-5
+  carAnswerId String?    @db.ObjectId
+}
