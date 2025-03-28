@@ -6,22 +6,17 @@ import Link from "next/link";
 import Tooltip from "@mui/material/Tooltip";
 import styled from "@emotion/styled";
 import { useRedirect } from "@/hooks/useRedirect";
-import { CircularProgress, Typography } from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
 import { getCarSets } from "@/calls/car-set.call";
-import { CarSet, CarSetAnswer } from "@/types";
+import { CarSetWithoutIds, CarSetAnswerWithoutIds } from "@/types";
 import { getCarSetAnswers } from "@/calls/car-set-answer.call";
 import { useCarSetStore } from "@/state/car-set";
 import { useGlobalState } from "@/state/global";
-// import {
-//   createComparisonBlueprint,
-//   deleteComparisonBlueprint,
-//   getComparisonBlueprints,
-// } from "@/calls/comparisonBlueprint.call";
-// import { IComparisonBlueprint } from "@/types";
-// import { deleteComparison } from "@/calls/comparison.call";
 
 const Main = () => {
-  const [carSetAnswers, setCarSetAnswers] = useState<CarSetAnswer[]>([]);
+  const [carSetAnswers, setCarSetAnswers] = useState<CarSetAnswerWithoutIds[]>(
+    []
+  );
   const carSetStore = useCarSetStore();
 
   const { isLoading } = useGlobalState();
@@ -73,36 +68,44 @@ const Main = () => {
   return (
     <MainWrapper>
       <Typography variant="h4">Średnia ocen dla zestawu</Typography>
-      <Table>
-        <Thead>
-          <Tr>
-            <Th>Pytanie</Th>
-            {carSetStore.cars.map((car, carIdx) => (
-              <Th key={car.id}>{`${car.brand} ${car.model}`}</Th>
-            ))}
-          </Tr>
-        </Thead>
-        <TBody>
-          {carSetStore.cars[0]?.questions.map((q, questionIdx) => (
-            <Tr key={questionIdx}>
-              <Td>{q.text}</Td>
-              {carSetStore.cars?.map((car, carIdx) => (
-                <Td
-                  key={carIdx}
-                  style={{
-                    color: getColor(
-                      calcAverageQuestionRatings(carIdx, questionIdx)
-                    ),
-                    fontWeight: "600",
-                  }}
-                >
-                  {calcAverageQuestionRatings(carIdx, questionIdx)}
-                </Td>
+      {carSetAnswers.length ? (
+        <Table>
+          <Thead>
+            <Tr>
+              <Th>Pytanie</Th>
+              {carSetStore.cars.map((car, carIdx) => (
+                <Th key={car.id}>{`${car.brand} ${car.model}`}</Th>
               ))}
             </Tr>
-          ))}
-        </TBody>
-      </Table>
+          </Thead>
+          <TBody>
+            {carSetStore.cars[0]?.questions.map((q, questionIdx) => (
+              <Tr key={questionIdx}>
+                <Td>{q.text}</Td>
+                {carSetStore.cars?.map((car, carIdx) => (
+                  <Td
+                    key={carIdx}
+                    style={{
+                      color: getColor(
+                        calcAverageQuestionRatings(carIdx, questionIdx)
+                      ),
+                      fontWeight: "600",
+                    }}
+                  >
+                    {calcAverageQuestionRatings(carIdx, questionIdx)}
+                  </Td>
+                ))}
+              </Tr>
+            ))}
+          </TBody>
+        </Table>
+      ) : (
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h6">
+            Nie znaleziono odpowiedzi dla zestawu.
+          </Typography>
+        </Box>
+      )}
     </MainWrapper>
   );
 };

@@ -116,7 +116,7 @@ export const seedDB = async () => {
             {
               brand: "Mercedes",
               model: "GLB",
-              imgUrl: "/../images/glb.webp",
+              imgUrl: "/../images/glb.avif",
               questions: {
                 create: [
                   {

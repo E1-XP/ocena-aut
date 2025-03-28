@@ -14,6 +14,7 @@ import { getCarSet } from "@/calls/car-set.call";
 import { useGlobalState } from "@/state/global";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useCarSetAnswerStore } from "@/state/car-answer";
+import { CarAnswer, CarAnswerwithoutIds } from "@/types";
 
 interface Props {
   params: { carSet: string };
@@ -68,10 +69,10 @@ export default function Page({ params }: Props) {
     carAnswerState.setCars([
       ...carAnswerState.cars,
       { questions: [], carSetAnswerId: carState.id, carId },
-    ]); // create answer state car to later append question answers during next screens with questions
+    ] as CarAnswer[]); // create answer state car to later append question answers during next screens with questions
 
     setIsLoading(true);
-    router.push(`/${carSetUrl}/${carId}/questions//1`);
+    router.push(`/${carSetUrl}/${carId}/questions/0`);
   };
 
   if (globalState.isLoading) {

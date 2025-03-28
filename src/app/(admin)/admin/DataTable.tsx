@@ -7,15 +7,10 @@ import Tooltip from "@mui/material/Tooltip";
 import styled from "@emotion/styled";
 import { useRedirect } from "../../../hooks/useRedirect";
 import { Typography } from "@mui/material";
-import { getCarSets } from "@/calls/car-set.call";
+import { createCarSet, getCarSets } from "@/calls/car-set.call";
+import { CarSetWithoutIds } from "@/types";
+import { deleteCarSetAnswers } from "@/calls/car-set-answer.call";
 import { CarSet } from "@/types";
-// import {
-//   createComparisonBlueprint,
-//   deleteComparisonBlueprint,
-//   getComparisonBlueprints,
-// } from "@/calls/comparisonBlueprint.call";
-// import { IComparisonBlueprint } from "@/types";
-// import { deleteComparison } from "@/calls/comparison.call";
 
 const Main: FC = () => {
   const [carSets, setCarSets] = useState<CarSet[]>([]);
@@ -25,7 +20,6 @@ const Main: FC = () => {
   useEffect(() => {
     getCarSets()
       .then((data) => {
-        console.log(data);
         setCarSets(data);
       })
       .catch((err) => {
@@ -33,16 +27,20 @@ const Main: FC = () => {
       });
   }, []);
 
-  const handleDeleteComparisons = (url: string): void => {
-    // if (confirm("Czy na pewno chcesz usunąć porównania dla tego szablonu?")) {
-    //   deleteComparison(url, true)
-    //     .then(() => {
-    //       alert("Porównania dla szablonu zostały usuniete.");
-    //     })
-    //     .catch((err) => {
-    //       alert(err);
-    //     });
-    // }
+  const handleDeleteAnswers = (carSetId: string): void => {
+    if (
+      confirm(
+        "Czy na pewno chcesz usunąć wszystkie odpowiedzi dla tego zestawu?"
+      )
+    ) {
+      deleteCarSetAnswers(carSetId)
+        .then(() => {
+          alert("Porównania dla szablonu zostały usuniete.");
+        })
+        .catch((err) => {
+          alert(err);
+        });
+    }
   };
 
   const handleDeleteComparisonBlueprint = (id: string): void => {
@@ -60,43 +58,44 @@ const Main: FC = () => {
   };
 
   const handleClone = (id: string, url: string): void => {
-    // const originalComparison = comparisonBlueprints.find(
-    //   (comparison) => comparison.id === id
-    // );
-    // if (!originalComparison) return;
-    // const isUrlTaken = (url: string) =>
-    //   !!comparisonBlueprints.find((comparison) => comparison.url === url);
-    // const generateUrl = (url: string) => {
-    //   let newUrl = url + "-kopia";
-    //   let i = 1;
-    //   while (isUrlTaken(newUrl)) {
-    //     newUrl = url + "-kopia-" + i;
-    //     i++;
-    //   }
-    //   return newUrl;
-    // };
-    // const preparedToClone = {
-    //   url: generateUrl(url),
-    //   cars: originalComparison.cars.map((car) => ({
-    //     ...car,
-    //     id: undefined,
-    //     comparisonBlueprintId: undefined,
-    //     options: car.options.map((option) => ({
-    //       ...option,
-    //       id: undefined,
-    //       CarBlueprintId: undefined,
-    //     })),
-    //   })),
-    // };
-    // createComparisonBlueprint(preparedToClone)
-    //   .then((res) => {
-    //     setComparisonBlueprints([...comparisonBlueprints, res]);
-    //   })
-    //   .catch((err) => {
-    //     if (err.response.status === 400) {
-    //       alert("Nie udało się sklonować zestawu (możliwy duplikat url)");
-    //     }
-    //   });
+    const orginalCarSet = carSets.find((set) => set.id === id);
+    if (!orginalCarSet) return;
+
+    const isUrlTaken = (url: string) =>
+      !!carSets.find((set) => set.url === url);
+
+    const generateUrl = (url: string) => {
+      let newUrl = url + "-kopia";
+      let i = 1;
+
+      while (isUrlTaken(newUrl)) {
+        newUrl = url + "-kopia-" + i;
+        i++;
+      }
+      return newUrl;
+    };
+
+    const preparedToClone: CarSetWithoutIds = {
+      url: generateUrl(url),
+      cars: orginalCarSet.cars.map((car) => ({
+        ...car,
+        id: undefined,
+        questions: car.questions.map((q) => ({
+          ...q,
+          id: undefined,
+        })),
+      })),
+    };
+
+    createCarSet(preparedToClone)
+      .then((res) => {
+        setCarSets([...carSets, res]);
+      })
+      .catch((err) => {
+        if (err.response.status === 400) {
+          alert("Nie udało się sklonować zestawu (możliwy duplikat url)");
+        }
+      });
   };
 
   return (
@@ -117,9 +116,9 @@ const Main: FC = () => {
               <Td>{set.cars[0].questions.length}</Td>
               <CenterTd>
                 <Link href={`/admin/results/${set.url}`}>
-                  <Tooltip title="Zobacz wyniki">
+                  <Tooltip title="Zobacz statystyki">
                     <IconButton>
-                      <Icon type="equalizer" color="primary" />
+                      <Icon type="equalizer" color="success" />
                     </IconButton>
                   </Tooltip>
                 </Link>
@@ -134,7 +133,7 @@ const Main: FC = () => {
 
                 <Tooltip title="Duplikuj">
                   <IconButton onClick={() => handleClone(set.id, set.url)}>
-                    <Icon type="clone" color="primary" />
+                    <Icon type="clone" color="secondary" />
                   </IconButton>
                 </Tooltip>
 
@@ -146,23 +145,24 @@ const Main: FC = () => {
                   </Tooltip>
                 </Link>
 
-                <Tooltip title="Wyczyść utworzone na tej podstawie porównania">
+                <Tooltip title="Wyczyść odpowiedzi do zestawu">
                   <div style={{ display: "inline-block" }}>
                     <IconButton
                       //   disabled={set.results.length === 0}
-                      onClick={() => handleDeleteComparisons(set.url)}
+                      onClick={() => handleDeleteAnswers(set.id)}
                     >
                       <Icon
                         type="delete"
-                        // color={
-                        //   set.results.length === 0 ? "disabled" : "warning"
-                        // }
+                        color={
+                          "warning"
+                          // set.results.length === 0 ? "disabled" : "warning"
+                        }
                       />
                     </IconButton>
                   </div>
                 </Tooltip>
 
-                <Tooltip title="Usuń porównanie">
+                <Tooltip title="Usuń zestaw">
                   <IconButton
                     onClick={() => handleDeleteComparisonBlueprint(set.id)}
                   >

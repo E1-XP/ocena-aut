@@ -4,12 +4,11 @@ import { useCarSetStore } from "@/state/car-set";
 import { useGlobalState } from "@/state/global";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
-import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Slider from "@mui/material/Slider";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, MouseEvent } from "react";
-import { Car } from "@/types";
+import { Car, CarAnswer, CarAnswerwithoutIds } from "@/types";
 import Button from "@/components/Button";
 import Grid from "@mui/material/Grid2";
 import Stack from "@mui/material/Stack";
@@ -31,7 +30,13 @@ export default function Page({ params }: Props) {
   const [rating, setRating] = useState(3);
   const [car, setCar] = useState<Car | null>(null);
 
-  const textData = { nextBtn: "Dalej", completedBtn: "Wyślij wyniki" };
+  const textData = {
+    nextBtn: "Dalej",
+    completedBtn: "Wyślij wyniki",
+    instructionsHeading: "Instrukcja",
+    instructions:
+      "Oceń w skali od 1 do 5 parametry modelu samochodu, który testujesz (1 – źle, 5 – bardzo dobrze).",
+  };
 
   const setCars = useCarSetStore((state) => state.setCars);
   const setIsLoading = useGlobalState((state) => state.setIsLoading);
@@ -77,13 +82,13 @@ export default function Page({ params }: Props) {
     car?.questions.length && +questionIdx - 1 === car.questions.length - 1;
 
   const addQuestionAnswer = () => {
-    const cars = [...carAnswerState.cars];
+    const cars: CarAnswerwithoutIds[] = [...carAnswerState.cars];
     const carToUpdateIdx = cars.findIndex((car) => car.carId === carId);
     const questions = cars[carToUpdateIdx].questions;
     questions.push({ rating });
 
     cars[carToUpdateIdx] = { ...cars[carToUpdateIdx], questions };
-    setAnswerCars(cars);
+    setAnswerCars(cars as CarAnswer[]);
   };
 
   const onNextBtnClick = async (e: MouseEvent<HTMLButtonElement>) => {
@@ -100,6 +105,7 @@ export default function Page({ params }: Props) {
       );
 
       setIsLoading(true);
+      console.log(carAnswerState.cars);
 
       if (carAnswerState.cars.length === carState.cars.length) {
         if (!carAnswerState.carSetId) throw new Error("carSetId has no value.");
@@ -114,7 +120,7 @@ export default function Page({ params }: Props) {
 
       router.push(`/${carSetUrl}`);
     } else {
-      addQuestionAnswer();
+      if (questionIdx !== "0") addQuestionAnswer();
     }
   };
 
@@ -141,36 +147,48 @@ export default function Page({ params }: Props) {
       >
         <Grid container spacing={2} justifyContent={"center"}>
           <Grid
-            size={{ xs: 12, md: 4 }}
+            size={{ xs: 12, md: 6 }}
             justifyContent={"center"}
             alignItems={"center"}
           >
             <Stack spacing={5} alignItems={"center"}>
-              <Typography variant="h5" align={"center"}>
-                {car?.brand} {car?.model}
-              </Typography>
-              <Typography variant="h4" align={"center"}>
-                {car?.questions[+questionIdx - 1].text}
-              </Typography>
-              <Typography variant="h6" align="center">
-                {rating} / {5}
-              </Typography>
-              <Slider
-                aria-label="Rate car functionality"
-                color="secondary"
-                defaultValue={5}
-                getAriaValueText={valuetext}
-                step={1}
-                max={5}
-                min={1}
-                value={rating}
-                onChange={(e, v) => setRating(v as number)}
-                sx={{
-                  "& .MuiSlider-thumb": {
-                    transform: "scale(1.5) translateY(-30%)",
-                  },
-                }}
-              />
+              {questionIdx === "0" ? (
+                <>
+                  <Typography variant="h4">
+                    {textData.instructionsHeading}
+                  </Typography>
+
+                  <Typography variant="h5">{textData.instructions}</Typography>
+                </>
+              ) : (
+                <>
+                  <Typography variant="h5" align={"center"}>
+                    {car?.brand} {car?.model}
+                  </Typography>
+                  <Typography variant="h4" align={"center"}>
+                    {car?.questions[+questionIdx - 1].text}
+                  </Typography>
+                  <Typography variant="h6" align="center">
+                    {rating} / {5}
+                  </Typography>
+                  <Slider
+                    aria-label="Rate car functionality"
+                    color="secondary"
+                    defaultValue={5}
+                    getAriaValueText={valuetext}
+                    step={1}
+                    max={5}
+                    min={1}
+                    value={rating}
+                    onChange={(e, v) => setRating(v as number)}
+                    sx={{
+                      "& .MuiSlider-thumb": {
+                        transform: "scale(1.5) translateY(-30%)",
+                      },
+                    }}
+                  />
+                </>
+              )}
               <Button
                 color="secondary"
                 href={isOnLastQuestion ? `#` : nextQuestionUrl}
