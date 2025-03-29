@@ -23,7 +23,7 @@ const Main = () => {
   const setIsLoading = useGlobalState((state) => state.setIsLoading);
 
   useEffect(() => {
-    if (carSetStore.id !== "0")
+    if (carSetStore.id !== "0") {
       getCarSetAnswers(carSetStore.id)
         .then((data) => {
           setCarSetAnswers(data);
@@ -32,19 +32,20 @@ const Main = () => {
         .catch((err) => {
           alert("Wystąpił błąd ładowania danych.");
         });
+    }
   }, [carSetStore.id]);
 
   const calcAverageQuestionRatings = (carIdx: number, questionIdx: number) => {
     return (
-      carSetAnswers.reduce(
-        (acc, set) =>
-          acc + set.carAnswers[carIdx].questions[questionIdx].rating,
-        0
-      ) / carSetAnswers.length
+      carSetAnswers.reduce((acc, set) => {
+        if (!set.carAnswers[carIdx]) return acc + 0; // handle not rated car results
+        return acc + set.carAnswers[carIdx].questions[questionIdx].rating;
+      }, 0) / carSetAnswers.length
     );
   };
 
   const getColor = (average: number) => {
+    if (average === 0) return "#555";
     if (average < 3) return "red";
     if (average === 3) return "orange";
     else return "green";
@@ -92,7 +93,7 @@ const Main = () => {
                       fontWeight: "600",
                     }}
                   >
-                    {calcAverageQuestionRatings(carIdx, questionIdx)}
+                    {calcAverageQuestionRatings(carIdx, questionIdx) || "-"}
                   </Td>
                 ))}
               </Tr>

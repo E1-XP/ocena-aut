@@ -13,7 +13,10 @@ import Button from "@/components/Button";
 import Grid from "@mui/material/Grid2";
 import Stack from "@mui/material/Stack";
 import { useCarSetAnswerStore } from "@/state/car-answer";
-import { createCarSetAnswer } from "@/calls/car-set-answer.call";
+import {
+  createCarSetAnswer,
+  editCarSetAnswer,
+} from "@/calls/car-set-answer.call";
 
 interface Props {
   params: { questionIdx: string; carId: string; carSet: string };
@@ -42,6 +45,9 @@ export default function Page({ params }: Props) {
   const setIsLoading = useGlobalState((state) => state.setIsLoading);
 
   const setAnswerCars = useCarSetAnswerStore((state) => state.setCars);
+  const setCarSetAnswerId = useCarSetAnswerStore(
+    (state) => state.setCarSetAnswerId
+  );
 
   useEffect(() => {
     setIsLoading(true);
@@ -105,19 +111,24 @@ export default function Page({ params }: Props) {
       );
 
       setIsLoading(true);
-      console.log(carAnswerState.cars);
 
-      if (carAnswerState.cars.length === carState.cars.length) {
-        if (!carAnswerState.carSetId) throw new Error("carSetId has no value.");
+      if (!carAnswerState.carSetId) throw new Error("carSetId has no value.");
 
+      if (!carAnswerState.carSetAnswerId) {
         const newCarSetAnswer = {
           carAnswers: carAnswerState.cars,
           carSetId: carAnswerState.carSetId,
         };
 
-        await createCarSetAnswer(newCarSetAnswer);
+        const setAnswer = await createCarSetAnswer(newCarSetAnswer);
+        setCarSetAnswerId(setAnswer.id);
+      } else {
+        await editCarSetAnswer({
+          carAnswers: carAnswerState.cars,
+          carSetId: carAnswerState.carSetId,
+          id: carAnswerState.carSetAnswerId,
+        });
       }
-
       router.push(`/${carSetUrl}`);
     } else {
       if (questionIdx !== "0") addQuestionAnswer();

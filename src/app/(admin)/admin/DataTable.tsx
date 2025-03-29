@@ -35,7 +35,7 @@ const Main: FC = () => {
     ) {
       deleteCarSetAnswers(carSetId)
         .then(() => {
-          alert("Porównania dla szablonu zostały usuniete.");
+          alert("Odpowiedzi zostały usuniete.");
         })
         .catch((err) => {
           alert(err);

@@ -46,7 +46,10 @@ export const AdminMenu: FC = () => {
           "aria-labelledby": "basic-button",
         }}
       >
-        <Link href="/admin">
+        <Link
+          href="/admin"
+          style={{ textDecoration: "none", color: "inherit" }}
+        >
           <MenuItem onClick={handleClose}>Lista zestawów</MenuItem>
         </Link>
 

@@ -15,6 +15,7 @@ import { useGlobalState } from "@/state/global";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useCarSetAnswerStore } from "@/state/car-answer";
 import { CarAnswer, CarAnswerwithoutIds } from "@/types";
+import { getCarSetAnswers } from "@/calls/car-set-answer.call";
 
 interface Props {
   params: { carSet: string };
@@ -41,6 +42,9 @@ export default function Page({ params }: Props) {
 
   const setAnswerCars = useCarSetAnswerStore((state) => state.setCars);
   const setCarSetId = useCarSetAnswerStore((state) => state.setCarSetId);
+  const setCarSetAnswerId = useCarSetAnswerStore(
+    (state) => state.setCarSetAnswerId
+  );
 
   const setIsLoading = useGlobalState((state) => state.setIsLoading);
 
@@ -50,14 +54,25 @@ export default function Page({ params }: Props) {
 
   useEffect(() => {
     if (carSetUrl !== carState.url) {
-      getCarSet(carSetUrl).then((data) => {
-        if (data) {
-          setCars(data.cars.map((car) => ({ ...car, visited: false })));
-          setId(data.id);
-          setUrl(data.url);
+      getCarSet(carSetUrl).then((carSet) => {
+        if (carSet) {
+          setCars(carSet.cars.map((car) => ({ ...car, visited: false })));
+          setId(carSet.id);
+          setUrl(carSet.url);
         }
 
-        setIsLoading(false);
+        getCarSetAnswers(carSet.id)
+          .then((answers) => {
+            const answerSet = answers.find((set) => set.carSetId === carSet.id);
+
+            if (answerSet) {
+              setAnswerCars(answerSet.carAnswers);
+              setCarSetAnswerId(answerSet.id);
+            }
+
+            setIsLoading(false);
+          })
+          .catch((err) => console.log(err));
       });
     } else setIsLoading(false);
   }, []);
@@ -66,11 +81,12 @@ export default function Page({ params }: Props) {
     clearAnswerState();
     setCarSetId(carState.id);
 
-    carAnswerState.setCars([
-      ...carAnswerState.cars,
-      { questions: [], carSetAnswerId: carState.id, carId },
-    ] as CarAnswer[]); // create answer state car to later append question answers during next screens with questions
-
+    if (!carAnswerState.cars.find((car) => car.carId === carId)) {
+      setAnswerCars([
+        ...carAnswerState.cars,
+        { questions: [], carSetAnswerId: carState.id, carId },
+      ] as CarAnswer[]); // create answer state car to later append question answers during next screens with questions
+    }
     setIsLoading(true);
     router.push(`/${carSetUrl}/${carId}/questions/0`);
   };
@@ -103,7 +119,11 @@ export default function Page({ params }: Props) {
                 <Card>
                   <CardActionArea
                     onClick={(e) => onCarCardClick(e, car.id)}
-                    disabled={car.visited}
+                    disabled={
+                      carAnswerState.cars.find(
+                        (ansCar) => ansCar.carId === car.id
+                      ) !== undefined
+                    }
                     sx={{
                       height: "100%",
                       "&[data-active]": {
@@ -112,7 +132,12 @@ export default function Page({ params }: Props) {
                           backgroundColor: "action.selectedHover",
                         },
                       },
-                      opacity: car.visited ? "0.5" : undefined,
+                      opacity:
+                        carAnswerState.cars.find(
+                          (ansCar) => ansCar.carId === car.id
+                        ) !== undefined
+                          ? "0.5"
+                          : undefined,
                     }}
                   >
                     <CardContent

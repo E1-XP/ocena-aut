@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createEdgeRouter } from "next-connect";
 import prisma from "../../../../prisma/client";
-import { CarSetAnswerWithoutIds } from "@/types";
+import { CarSetAnswer, CarSetAnswerWithoutIds } from "@/types";
 
 interface RequestContext {
   params: {};
@@ -71,6 +71,49 @@ router.get(async (req, ctx) => {
   }
 });
 
+router.patch(async (req, ctx) => {
+  const data = (await req.json()) as CarSetAnswer;
+
+  try {
+    await prisma.carAnswer.deleteMany({
+      where: {
+        carSetAnswerId: data.id,
+      },
+    });
+
+    const carSet = await prisma.carSetAnswer.update({
+      where: { id: data.id },
+      data: {
+        carSetId: data.carSetId,
+        carAnswers: {
+          create: data.carAnswers.map((answer) => ({
+            ...answer,
+            carSetAnswerId: undefined,
+            questions: {
+              create: answer.questions.map((q) => ({ rating: q.rating })),
+            },
+          })),
+        },
+      },
+      include: { carAnswers: { include: { questions: true } } },
+    });
+
+    return NextResponse.json(
+      {
+        message: "Car set answer created succesfully.",
+        data: carSet,
+      },
+      { status: 200 }
+    );
+  } catch (error: unknown) {
+    console.log(error);
+    const message =
+      error instanceof Error ? error.message : "An error occurred";
+
+    return NextResponse.json({ message }, { status: 400 });
+  }
+});
+
 router.delete(async (req, ctx) => {
   const { searchParams } = new URL(req.url);
   const carSetId = searchParams.get("carsetid");
@@ -103,6 +146,10 @@ export async function GET(request: NextRequest, ctx: RequestContext) {
 }
 
 export async function POST(request: NextRequest, ctx: RequestContext) {
+  return router.run(request, ctx) as Promise<Response>;
+}
+
+export async function PATCH(request: NextRequest, ctx: RequestContext) {
   return router.run(request, ctx) as Promise<Response>;
 }
 
